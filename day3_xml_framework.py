@@ -1,26 +1,66 @@
+import os
+from dotenv import load_dotenv
+from openai import OpenAI
+
+load_dotenv()
+
+client = OpenAI(
+    base_url="https://openrouter.ai/api/v1",
+    api_key=os.getenv("OPENROUTER_API_KEY")
+)
+
 resume_text = """
 K Raviteja
+Education = B tech
 Email: raviteja@example.com
 Skills: Python, JavaScript, Firebase
 Experience: GenAI Engineer
 """
 
 
-def mock_llm_response(resume):
-    return """
-Sure! Here is the extracted information:
+def llm_response(resume):
 
-<data>
-Name: K Raviteja
-Email: raviteja@example.com
-Primary Skills: Python, JavaScript, Firebase
-</data>
+    prompt = f"""
+Extract the following information from the resume:
 
-Let me know if you need anything else!
+- Name
+- Education
+- Email
+- Primary Skills
+
+Rules:
+1. Put the extracted information only between <data> and </data>.
+2. Do not add greetings.
+3. Do not add explanations.
+4. Do not add any text outside the XML tags.
+
+Resume:
+{resume}
 """
+
+    try:
+        response = client.chat.completions.create(
+            model="openrouter/free",
+            messages=[
+                {
+                    "role": "system",
+                    "content": "You are a resume information extraction assistant."
+                },
+                {
+                    "role": "user",
+                    "content": prompt
+                }
+            ]
+        )
+
+        return response.choices[0].message.content
+
+    except Exception as e:
+        return f"API Error: {e}"
 
 
 def extract_data(raw_response):
+
     start_tag = "<data>"
     end_tag = "</data>"
 
@@ -38,9 +78,10 @@ def extract_data(raw_response):
 
 
 if __name__ == "__main__":
+
     print("Starting Day 3 XML extraction...")
 
-    raw_response = mock_llm_response(resume_text)
+    raw_response = llm_response(resume_text)
 
     print("\nRaw LLM Response:")
     print(raw_response)
