@@ -11,30 +11,42 @@ client = OpenAI(
 
 resume_text = """
 K Raviteja
-Education = B tech
+Education: B.Tech
 Email: raviteja@example.com
 Skills: Python, JavaScript, Firebase
-Experience: GenAI Engineer
+Experience: 2 years
 """
 
 
-def llm_response(resume):
+def get_llm_response(resume):
 
     prompt = f"""
-Extract the following information from the resume:
+Read the candidate information provided below and extract these details:
 
-- Name
-- Education
-- Email
-- Primary Skills
+Name
+Education
+Email
+Primary Skills
+Experience
+
+Return the result using exactly this structure:
+
+<data>
+Name: candidate name
+Education: candidate education
+Email: candidate email
+Primary Skills: candidate skills
+Experience: candidate experience
+</data>
 
 Rules:
-1. Put the extracted information only between <data> and </data>.
-2. Do not add greetings.
-3. Do not add explanations.
-4. Do not add any text outside the XML tags.
+1. The extracted information must be inside <data> and </data>.
+2. Do not provide greetings.
+3. Do not provide explanations.
+4. Do not create information that is missing from the resume.
+5. Do not place conversational text outside the XML boundaries.
 
-Resume:
+Candidate Resume:
 {resume}
 """
 
@@ -44,7 +56,7 @@ Resume:
             messages=[
                 {
                     "role": "system",
-                    "content": "You are a resume information extraction assistant."
+                    "content": "You extract candidate information accurately and follow the requested XML format."
                 },
                 {
                     "role": "user",
@@ -55,38 +67,38 @@ Resume:
 
         return response.choices[0].message.content
 
-    except Exception as e:
-        return f"API Error: {e}"
+    except Exception as error:
+        return f"API Error: {error}"
 
 
-def extract_data(raw_response):
+def isolate_data(response_text):
 
-    start_tag = "<data>"
-    end_tag = "</data>"
+    opening_tag = "<data>"
+    closing_tag = "</data>"
 
-    start_index = raw_response.find(start_tag)
-    end_index = raw_response.find(end_tag)
+    opening_position = response_text.find(opening_tag)
+    closing_position = response_text.find(closing_tag)
 
-    if start_index == -1 or end_index == -1:
-        return "Error: Data tags not found"
+    if opening_position == -1 or closing_position == -1:
+        return "Error: XML data boundaries were not found."
 
-    start_index = start_index + len(start_tag)
+    data_start = opening_position + len(opening_tag)
 
-    extracted_data = raw_response[start_index:end_index]
+    extracted_content = response_text[data_start:closing_position]
 
-    return extracted_data.strip()
+    return extracted_content.strip()
 
 
 if __name__ == "__main__":
 
-    print("Starting Day 3 XML extraction...")
+    print("Starting candidate information extraction...")
 
-    raw_response = llm_response(resume_text)
+    llm_output = get_llm_response(resume_text)
 
     print("\nRaw LLM Response:")
-    print(raw_response)
+    print(llm_output)
 
-    result = extract_data(raw_response)
+    clean_data = isolate_data(llm_output)
 
-    print("\nIsolated Data:")
-    print(result)
+    print("\nIsolated Candidate Data:")
+    print(clean_data)
